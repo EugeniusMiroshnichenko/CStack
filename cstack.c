@@ -39,10 +39,18 @@ static struct Stack** stackArray = NULL;
 hstack_t stack_new(void)
 {
     // Добавление стека
+
     struct Stack* stack = malloc(sizeof(struct Stack)); // Выделяем память
+    if (stack == NULL) return -1; // Не удалось создать стек
     stack->lastElPtr = NULL;  // Элементов в стеке пока что нет
 
-    stackArray = realloc(stackArray, (stackArrayCount + 1) * sizeof(struct Stack*));
+    struct Stack** new_array = realloc(stackArray, (stackArrayCount + 1) * sizeof(struct Stack*));
+    if (new_array == NULL) {
+        // Не удалось создать список стеков
+        free(stack);
+        return -1;
+    }
+    stackArray = new_array;
     stackArray[stackArrayCount] = stack;
 
     int new_handle = stackArrayCount;
@@ -54,8 +62,8 @@ void stack_free(const hstack_t hstack)
 {
     // Удаление стека и его элементов
 
-    // Проверка на адекватность id стека
     if (stack_valid_handler(hstack) == 1){
+        // Если стека с таким hstack нет, то просто ничего не делаем
         return;
     }
 
@@ -80,9 +88,11 @@ void stack_free(const hstack_t hstack)
             free(deletingStack);
             continue;
         }
+        // Переносим элементы старого списка в новый
         newStackArray[newIdx] = stackArray[i];
         newIdx++;
     }
+    // Высвобождаем память
     free(stackArray);
     stackArray = newStackArray;
     stackArrayCount -= 1;
@@ -90,8 +100,12 @@ void stack_free(const hstack_t hstack)
 }
 
 int stack_valid_handler(const hstack_t hstack)
-{
+{ 
+    // Проверка валидности заданного hstack
+
+    // Все hstack являются последовательными числами от 0
     if ((stackArrayCount == 0) || (hstack < 0) || (hstack >= stackArrayCount)){
+        
         return 1;
     }
     else {
@@ -101,8 +115,10 @@ int stack_valid_handler(const hstack_t hstack)
 
 unsigned int stack_size(const hstack_t hstack)
 {
-    // Проверка на адекватность id стека
+    // Количество элементов в стеке
+
     if (stack_valid_handler(hstack) == 1){
+        // Если такого стека нет, то и количество элементов = 0
         return 0;
     }
 
@@ -118,22 +134,27 @@ unsigned int stack_size(const hstack_t hstack)
 
 void stack_push(const hstack_t hstack, const void* data_in, const unsigned int size)
 {
-    // Проверка на адекватность id стека
+    // Добавление элемента в стек с заданным hstack
+
     if (stack_valid_handler(hstack) == 1){
+        // Если такого стека не существует, то ничего не делаем
         return;
     }
+
     struct Stack* currentStack = stackArray[hstack];
     struct StackElement* lastEl = currentStack->lastElPtr;
     struct StackElement* el = create_stack_element((void*)data_in, size, lastEl);
     if (el != NULL) {
+        // Двигаем указатель на последний элемент, если он создался
         currentStack->lastElPtr = el;
     }
 }
 
 unsigned int stack_pop(const hstack_t hstack, void* data_out, const unsigned int size)
 {
-    // Проверка на декватность id стека
+    // Получить последний элемент в стеке с заданным hstack
     if (stack_valid_handler(hstack) == 1) {
+        // Если элемента нет, то размер записсанных данных = 0
         return 0;
     }
     
@@ -152,7 +173,7 @@ unsigned int stack_pop(const hstack_t hstack, void* data_out, const unsigned int
         sizeOfEl = (size < lastEl->size) ? size : lastEl->size;
         memcpy(data_out, lastEl->data, sizeOfEl);
     } else {
-        // Если буфера нет, то элемент из стека все равно удалим
+        // Если буфера нет, то элемент из стека все равно удалим и его размер передадим
         sizeOfEl = lastEl->size;
     }
     
@@ -160,7 +181,7 @@ unsigned int stack_pop(const hstack_t hstack, void* data_out, const unsigned int
     struct StackElement* preLastEl = lastEl->prevElement;
     currentStack->lastElPtr = preLastEl;
     
-    // Освобождаем память элемента
+    // Освобождаем память
     free(lastEl->data);
     free(lastEl);
     
