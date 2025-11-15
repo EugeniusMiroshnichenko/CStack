@@ -11,8 +11,8 @@ struct Stack{
 
 struct StackElement{
     struct StackElement* prevElement;
-    unsigned int size;
     void* data;
+    unsigned int size;
 };
 
 struct StackElement* create_stack_element(void* data, unsigned int size, struct StackElement* prevElement){
@@ -22,6 +22,9 @@ struct StackElement* create_stack_element(void* data, unsigned int size, struct 
         return NULL;
     }
     struct StackElement* element = malloc(sizeof(struct StackElement));
+    if (element == NULL) {
+        return NULL;
+    }
 
     element->data = malloc(size);
     
@@ -89,6 +92,9 @@ void stack_free(const hstack_t hstack)
             continue;
         }
         // ѕереносим элементы старого списка в новый
+        //cmake ругаетс€, потому что не понимает, 
+        // что сюда мы не попадЄм, если newStackArray == NULL,
+        // равно как и обращени€ по несуществующему индексу
         newStackArray[newIdx] = stackArray[i];
         newIdx++;
     }
